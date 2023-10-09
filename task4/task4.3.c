@@ -1,11 +1,14 @@
 #include <stdio.h>
 
 int nod(int x, int y) {
-    int max_d = 1;
-    for (int i = 1; (i <= x && i <= y); i++) {
-        if (x % i == 0 && y % i == 0) {max_d = i;}
+    while (x != y) {
+        if (x > y) {
+            x -= y;
+        } else {
+            y -= x;
+        }
     }
-    return max_d;
+    return x;
 }
 
 int main() {
