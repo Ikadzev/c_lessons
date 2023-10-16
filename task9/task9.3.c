@@ -48,13 +48,18 @@ void removeSubArr(size_t n, int* arr, size_t n1, int* arr1, size_t* size_addr) {
 }
 
 int main() {
-    size_t n;
+    size_t n, n1;
     int* arr = scanArr(&n);
-    
-    size_t n1;
     int* arr1 = scanArr(&n1);
 
-    removeSubArr(n, arr, n1, arr1, &n);
+    size_t n_old, n_new;
+    do {
+        removeSubArr(n, arr, n1, arr1, &n);
+        n_old = n;
+
+        removeSubArr(n, arr, n1, arr1, &n);
+        n_new = n;
+    } while (n_old != n_new);
     for (size_t i = 0; i < n; i++) {
         printf("%d ", arr[i]);
     }
