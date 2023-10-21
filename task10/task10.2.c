@@ -2,7 +2,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-char* trim(char* str, size_t len_s) {
+char* trim(const char* str, size_t len_s) {
     size_t i = 0;
     while (str[i] == 32) {
         i++;
@@ -20,9 +20,8 @@ char* trim(char* str, size_t len_s) {
 }
 
 int main() {
-    char* str = "   ahgldscjkgh as;dojha;sojdg      ";
+    const char* str = " a ba  ";
     size_t len_s = strlen(str);
     char* new_str = trim(str, len_s);
     printf("%s ", new_str);
-    free(new_str);
 }
