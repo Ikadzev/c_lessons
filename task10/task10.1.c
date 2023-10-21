@@ -23,7 +23,7 @@ int main() {
     const char* str = " a   b a            ";
     size_t len_s = strlen(str);
     int f = palindrom(str, len_s);
-    if (f == 1) {
+    if (f) {
         printf("Palindrom");
     } else {
         printf("Not palindrom");
