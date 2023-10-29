@@ -28,4 +28,5 @@ int main() {
     } else {
         printf("Not palindrom");
     }
+    return 0;
 }

@@ -32,4 +32,5 @@ int main() {
     size_t len_s = strlen(str);
     char* new_str = trim(str, len_s);
     printf("%s ", new_str);
+    return 0;
 }
