@@ -15,7 +15,7 @@ int c2i(char c) {
     }
 }
 
-int s2i(const char *str, int base, jmp_buf *env) {
+int s2i(const char *str, int base, jmp_buf *env) { // jmp_buf уже указатель, * не нужен
     if (base < 2 || base > 16) {
         longjmp(*env, 1);
     }

@@ -9,16 +9,16 @@ void nullCheck(void* ptr) {
     }
 }
 
-char* trim(const char* str, size_t len_s) {
+char* trim(const char* str, size_t len_s) { // len_s убрать, вызывать strlen в коде
     size_t i = 0;
-    while (str[i] == 32) {
+    while (str[i] == 32) { // ' ' и дальше тоже
         i++;
     }
     size_t j = len_s;
     while (str[j-1] == 32) {
         j--;
     }
-    char* new_str = (char*) malloc((j-1) * sizeof(char));
+    char* new_str = (char*) malloc((j-1) * sizeof(char)); // j-i+1
     nullCheck(new_str);
     for (size_t q = 0; q < (j-i); q++) {
         new_str[q] = str[i+q];
