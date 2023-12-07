@@ -4,19 +4,17 @@
 
 const char** split(const char* str, size_t len_s, size_t* size_array) { // len_s не нужен, см. прошлую задачу
     const char** arry = malloc((len_s + 1) * sizeof(char*));
-    //nullCheck!!!!!!!!!!!!
-    size_t size_temp = 0; // перенести вперёд
+    nullCheck(arry);
     size_t size_arry = 0;
 
     for (size_t i = 0; i < len_s; i++) {        
         if ((str[i] != ' ') && (str[i] != 0)) {
             char* temp_str = malloc((len_s + 1) * sizeof(char));
-            //перенести вызов сюда
+            size_t size_temp = 0;
             for (; str[i] != ' ' && str[i] != 0; i++) {
                 temp_str[size_temp++] = str[i];
             }
             temp_str[size_temp] = 0;
-            size_temp = 0; // перенести назад
             arry[size_arry++] = temp_str;
         }
     }
@@ -25,7 +23,7 @@ const char** split(const char* str, size_t len_s, size_t* size_array) { // len_s
 }
 
 int main() {
-    const char* str = "ab cd e";
+    const char* str = "ab        cd e";
     size_t len_s = strlen(str);
     printf("%d\n", len_s);
     size_t size_arry;
