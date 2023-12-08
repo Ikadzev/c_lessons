@@ -1,4 +1,4 @@
-#define DEBUG
+// #define DEBUG
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -10,6 +10,25 @@ void nullCheck(void* ptr) {
         printf("OoM!");
         exit(0);
     }
+}
+
+// Проверка на палиндром
+int palindrom(const char* str) {
+    size_t len_s = strlen(str);
+    char* new_str = (char*) malloc(sizeof(char) * len_s);
+    size_t j = 0;
+    for (size_t i = 0; i < len_s; i++) {
+        if (str[i] != ' ') {
+            new_str[j++] = str[i];
+        }
+    }
+    new_str[j] = 0;
+    for (size_t q = 0; q < (j / 2)+1; q++) {
+        if (new_str[q] != new_str[j - q - 1]) {
+            return 0;
+        }
+    }
+    return 1;
 }
 
 // Структура для строк
@@ -61,7 +80,11 @@ void freeDynArrStr(DynArrStr* arr) {
 
 // Вывод строки в консоль
 void printString(const String* str) {
-    printf(">%s<\n", str->data);
+    #ifdef DEBUG
+    printf(">%s< ", str->data);
+    #else
+    printf("%s", str->data);
+    #endif
 }
 
 // Вывод динамического массива строк в консоль
@@ -83,7 +106,7 @@ void appendString(String* str, char c) {
 }
 
 // Добавление строки к динамическому массиву строк
-void appendDynArrStr(DynArrStr* arr, const String* str) {
+void appendDynArrStr(DynArrStr* arr, String* str) {
     if (arr->length >= arr->capacity) {
         arr->capacity *= 2;
         arr->data = (String*)realloc(arr->data, arr->capacity * sizeof(String));
@@ -96,93 +119,241 @@ void appendDynArrStr(DynArrStr* arr, const String* str) {
     arr->length++;
 }
 
-char* trim(const char* str) {
-    size_t i = 0;
-    while (str[i] == ' ') {
-        i++;
+// Удаление строки из массива
+void removeFromArr(DynArrStr* arr, size_t item) {
+    freeString(&(arr->data[item]));
+    for (size_t i = item; i < arr->length - 1; i++) {
+        arr->data[i] = arr->data[i+1];
     }
-    size_t j = strlen(str);
-    while (str[j-1] == ' ') {
-        j--;
-    }
-    char* new_str = (char*) malloc((j-i+1) * sizeof(char));
-    nullCheck(new_str);
-    for (size_t q = 0; q < (j-i); q++) {
-        new_str[q] = str[i+q];
-    }
-    new_str[j-i] = 0;
-    return new_str;
+    arr->length--;
 }
 
-// Разделение ввода на элементы
-void split(DynArrStr* arr, String* inp) {
-    int type = -1; // 0 - разделитель, 1 - слово, 2 - плюс или минус, 3 - знак препинания
-    for (size_t i = 0; i < strlen(inp->data); i++) {
-        int new_type = 3;
-        char c = inp->data[i];
-        if ((c == ' ') || (c == '\n')) {new_type = 0;}
-        if (isalpha(c) || isdigit(c)) {new_type = 1;}
-        if ((c == '+') || (c == '-')) {new_type = 2;}
-        printf("Type is %i, character is '%c'\n", new_type, c);
-        if (type == new_type) {
-            appendString(&(arr->data[arr->length-1]), c);
-        } else if ((type == 2) && (new_type == 1)) {
-            appendString(&(arr->data[arr->length-1]), c);
-            type = 1;
-        } else {        
-            String new_word;
-            initString(&new_word);
-            appendString(&new_word, c);
-            appendDynArrStr(arr, &new_word);
-            type = new_type;
+// Добавление строки внутрь массива
+void addToArr(DynArrStr* arr, size_t item, String* str) {
+    appendDynArrStr(arr, &(arr->data[arr->length - 1]));
+    for (size_t i = arr->length - 2; i > item; i--) {
+        arr->data[i] = arr->data[i-1];
+    }
+    arr->data[item] = *str;
+}
+
+// Разделение ввода на лексемы
+String nextLex(FILE* inp) {
+    String lex;
+    initString(&lex);
+    char c = fgetc(inp);
+    if (c == EOF) {}
+    else if (isblank(c)) {
+        appendString(&lex, c);
+    } else if (isalnum(c) || (c == '+') || (c == '-')) {
+        appendString(&lex, c);
+        while (isalnum(c = fgetc(inp))) {
+            appendString(&lex, c);
+        }
+        ungetc(c, inp);
+    } else {
+        appendString(&lex, c);
+    }
+    return lex;
+}
+
+void procDelimeter(DynArrStr* arr, size_t item) {
+    if ((item == 0) || (item == arr->length-1)) {
+        removeFromArr(arr, item);
+        return;
+    }
+    String str = arr->data[item];
+    size_t len = str.length;
+    String temp;
+    initString(&temp);
+    appendString(&temp, str.data[0]);
+    // printf("-+%c+-\n", temp[0]);
+    for (size_t i = 1; i < len; i++) {
+        if ((str.data[i] == ' ') && ((str.data[i-1] == ' ') || (str.data[i-1] == '\n'))) {
+            continue;
+        } else if (i >= 2) {
+            if ((str.data[i] == '\n') && (str.data[i-1] == '\n') && (str.data[i-2] == '\n')) {
+                continue;
+            }
+        }
+        // printf("~%c~ == %lu == %lu\n", str.data[i], i, item);
+        appendString(&temp, str.data[i]);
+    }
+    
+    removeFromArr(arr, item);
+    addToArr(arr, item, &temp);
+    // printf(">%s< ", arr->data[item].data);
+}
+
+void procString(DynArrStr* arr, size_t item) {
+    String* str = &(arr->data[item]);
+    if (palindrom(str->data)) {
+        char* pal = "PALINDROM\0";
+        char* temp = (char*)malloc(10 * sizeof(char));
+        for (size_t i = 0; i < 10; i++) {
+            temp[i] = pal[i];
+        }
+        free(str->data);
+        str->data = temp;
+        str->length = strlen(pal);
+        str->capacity = 10;
+    }
+}
+
+void procNumber(DynArrStr* arr, size_t item) {
+    int i = 0;
+    size_t sign = -1;
+    size_t digit = -1;
+    for (size_t s = item+1; s < arr->length; s++) {
+        String* str = &(arr->data[s]);
+        if ((isdigit(str->data[0])) && (i == 1)) {
+            digit = s;
+            break;
+        } else if (((str->data[0] == '-') || (str->data[0] == '+') || (str->data[0] == '/') || (str->data[0] == '*')) && (i == 0)) {
+            sign = s;
+            i = 1;
+            continue;
+        } else if (str->data[0] == ' ') {
+            continue;
+        } else {
+            return;
+            }
+    }
+    int answ = 0;
+    int f = 0;
+    String* str = &(arr->data[item]);
+    int f_d = atoi(str->data);
+    printf(">%lu< \n", digit);
+    int s_d = atoi(arr->data[digit].data);
+    switch (arr->data[sign].data[0]) {
+        case '-':
+            answ = f_d - s_d;
+            break;
+        case '+':
+            answ = f_d + s_d;
+            break;
+        case '*':
+            answ = f_d * s_d;
+            break;
+        case '/':
+            if (atoi(arr->data[digit].data) != 0) {
+                answ = f_d / s_d;
+            } else {
+                f = 1;
+            }
+            break;
+    }
+    for (size_t i = item; i < digit; i++) {
+        removeFromArr(arr, item);
+        String out;
+        initString(&out);
+
+    }
+    if (f) {
+        char* err = "ERROR\0";
+        char* answ = (char*)malloc(6 * sizeof(char));
+        for (size_t i = 0; i < 10; i++) {
+            answ[i] = err[i];
+        }
+        free(str->data);
+        str->data = answ;
+        str->length = strlen(err);
+        str->capacity = 6;
+    }
+}
+
+void strProc(DynArrStr* arr);
+void procBkt(DynArrStr* arr, size_t item) {
+    DynArrStr n_arr;
+    initDynArrStr(&n_arr);
+    int bkt = 0;
+    size_t end_brk = 0;
+    for (size_t i = item + 1; i < arr->length; i++) {
+        char c = arr->data[i].data[0];
+        if (c == '(') {
+            bkt++;
+        } else if ((c == ')') && (bkt != 0)) {
+            bkt--;
+        } else if ((c == ')') && (bkt == 0)) {
+            end_brk = i;
+            break;
+        }
+        appendDynArrStr(&n_arr, &(arr->data[i]));
+    }
+    if (!end_brk) { return; }
+    strProc(&n_arr);
+    if (n_arr.length == 1) {
+        for (size_t i = item; i <= end_brk; i++) {
+            removeFromArr(arr, item);
+        }
+        addToArr(arr, item, &(n_arr.data[0]));
+    } else {
+        for (size_t i = item+1; i < end_brk; i++) {
+            removeFromArr(arr, item+1);
+        }
+        for (size_t i = 0; i < n_arr.length; i++) {
+            addToArr(arr, item+i+1, &(n_arr.data[i]));
         }
     }
 }
 
-void start() {
-    char temp[1024];
-    FILE* ptr;
-    ptr = fopen("D:\\projects\\c_lessons\\labs\\first-lab\\tests\\1-input.txt", "r");
+void strProc(DynArrStr* arr) {
+    for (size_t i = 0; i < arr->length; i++) {
+        char c = arr->data[i].data[0];
+        if ((c == ' ') || (c == '\n')) {
+            procDelimeter(arr, i);
+        } else if (isalpha(c)) {
+            procString(arr, i);
+        } else if (isdigit(c)) {
+            procNumber(arr, i);
+            printDynArr(arr);
+            printf("\n");
+        } else if (c == '(') {
+            procBkt(arr, i);
+        }
+    }
+}
+
+void  start() {
+        FILE* ptr;
+    ptr = fopen("/home/ikadzev/projects/c_lessons/labs/first-lab/tests/3-input.txt", "r");
     if (ptr == NULL) {
         printf("Error while opening file");
         exit(1);
     }
-    String str;
-    initString(&str);
-    while (fgets(temp, 1024, ptr) != NULL) {
-        for (int i = 0; i < strlen(temp); i++) {
-            appendString(&str, temp[i]);
-        }
-    }
-    fclose(ptr);
-
     DynArrStr arr;
     initDynArrStr(&arr);
-    split(&arr, &str);
+    splitInp(&arr, ptr);
+    fclose(ptr);
+
+    size_t init_len = arr.length;    
+    strProc(&arr);
+    while (init_len != arr.length) {
+        init_len = arr.length;
+        strProc(&arr);
+    }
+    printDynArr(&arr);
+
+    return;
+}
+
+
+void nestart() {
+    String str;
+    DynArrStr arr;
+    initDynArrStr(&arr);
+    while ((str = nextLex(stdin)).length > 0) {
+        appendDynArrStr(&arr, &str);
+    }
+    size_t init_len = arr.length;    
+    strProc(&arr);
+    while (init_len != arr.length) {
+        init_len = arr.length;
+        strProc(&arr);
+    }
     printDynArr(&arr);
 }
 
-void debug() {
-    char a[3] = "123";
-    char b[3] = "456";
-    char c[3] = "789";
-    String s1, s2, s3;
-    initString(&s1);
-    initString(&s2);
-    initString(&s3);
-    for (size_t i = 0; i < 3; i++) {
-        appendString(&s1, a[i]);
-        appendString(&s2, b[i]);
-        appendString(&s3, c[i]);
-    }
-    DynArrStr da;
-    initDynArrStr(&da);
-    appendDynArrStr(&da, &s1);
-    appendDynArrStr(&da, &s2);
-    appendDynArrStr(&da, &s3);
-    printDynArr(&da);
-}
-
 int main() {
-    start();
+    nestart();
 }
