@@ -92,6 +92,7 @@ void printDynArr(DynArrStr* arr) {
     for (size_t i = 0; i < arr->length; i++) {
         printString(&arr->data[i]);
     }
+    printf("\n");
 }
 
 // Добавление символа к строке
@@ -201,12 +202,14 @@ void procString(DynArrStr* arr, size_t item) {
 }
 
 void procNumber(DynArrStr* arr, size_t item) {
+    if (item == arr->length - 1) {return;}
     int i = 0;
     size_t sign = -1;
     size_t digit = -1;
     for (size_t s = item+1; s < arr->length; s++) {
         String* str = &(arr->data[s]);
         if ((isdigit(str->data[0])) && (i == 1)) {
+            // printf("~%lu \n", s);
             digit = s;
             break;
         } else if (((str->data[0] == '-') || (str->data[0] == '+') || (str->data[0] == '/') || (str->data[0] == '*')) && (i == 0)) {
@@ -214,17 +217,19 @@ void procNumber(DynArrStr* arr, size_t item) {
             i = 1;
             continue;
         } else if (str->data[0] == ' ') {
-            continue;
+            continue; // if whitespace between lexems
         } else {
-            return;
+            return; // not an expression
             }
     }
+    // printf(">%lu %lu< \n", digit, sign);
+
     int answ = 0;
     int f = 0;
     String* str = &(arr->data[item]);
     int f_d = atoi(str->data);
-    printf(">%lu< \n", digit);
     int s_d = atoi(arr->data[digit].data);
+    // printf(">%lu %lu %i %i %c< \n", digit, sign, f_d, s_d, arr->data[sign].data[0]);
     switch (arr->data[sign].data[0]) {
         case '-':
             answ = f_d - s_d;
@@ -245,9 +250,6 @@ void procNumber(DynArrStr* arr, size_t item) {
     }
     for (size_t i = item; i < digit; i++) {
         removeFromArr(arr, item);
-        String out;
-        initString(&out);
-
     }
     if (f) {
         char* err = "ERROR\0";
@@ -259,6 +261,16 @@ void procNumber(DynArrStr* arr, size_t item) {
         str->data = answ;
         str->length = strlen(err);
         str->capacity = 6;
+        return;
+    } else {
+        String out;
+        initString(&out);
+        char* s_answ = malloc(20 * sizeof(char));
+        sprintf(s_answ, "%d", answ);
+        free(str->data);
+        str->data = s_answ;
+        str->length = strlen(s_answ);
+        str->capacity = 20;
     }
 }
 
@@ -306,39 +318,14 @@ void strProc(DynArrStr* arr) {
             procString(arr, i);
         } else if (isdigit(c)) {
             procNumber(arr, i);
-            printDynArr(arr);
-            printf("\n");
+            // printDynArr(arr);
         } else if (c == '(') {
             procBkt(arr, i);
         }
     }
 }
 
-void  start() {
-        FILE* ptr;
-    ptr = fopen("/home/ikadzev/projects/c_lessons/labs/first-lab/tests/3-input.txt", "r");
-    if (ptr == NULL) {
-        printf("Error while opening file");
-        exit(1);
-    }
-    DynArrStr arr;
-    initDynArrStr(&arr);
-    splitInp(&arr, ptr);
-    fclose(ptr);
-
-    size_t init_len = arr.length;    
-    strProc(&arr);
-    while (init_len != arr.length) {
-        init_len = arr.length;
-        strProc(&arr);
-    }
-    printDynArr(&arr);
-
-    return;
-}
-
-
-void nestart() {
+int main() {
     String str;
     DynArrStr arr;
     initDynArrStr(&arr);
@@ -346,14 +333,12 @@ void nestart() {
         appendDynArrStr(&arr, &str);
     }
     size_t init_len = arr.length;    
+    // printDynArr(&arr);
     strProc(&arr);
+    
     while (init_len != arr.length) {
         init_len = arr.length;
         strProc(&arr);
     }
     printDynArr(&arr);
-}
-
-int main() {
-    nestart();
 }
