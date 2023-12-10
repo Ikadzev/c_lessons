@@ -33,16 +33,16 @@ int palindrom(const char* str) {
 
 // Структура для строк
 typedef struct {
-    char* data;      // Указатель на строку в динамической памяти
-    size_t length;   // Длина строки
-    size_t capacity; // Ёмкость строки
+    char* data;
+    size_t length;
+    size_t capacity;
 } String;
 
 // Структура для динамического массива строк
 typedef struct {
-    String* data;     // Указатель на массив строк
-    size_t length;    // Длина массива
-    size_t capacity;  // Ёмкость массива
+    String* data;
+    size_t length;
+    size_t capacity;
 } DynArrStr;
 
 // Инициализация строки
@@ -88,11 +88,10 @@ void printString(const String* str) {
 }
 
 // Вывод динамического массива строк в консоль
-void printDynArr(DynArrStr* arr) {
+void printDynArr(DynArrStr* arr, FILE* out) {
     for (size_t i = 0; i < arr->length; i++) {
-        printString(&arr->data[i]);
+        fprintf(out, "%s", arr->data[i].data);   
     }
-    printf("\n");
 }
 
 // Добавление символа к строке
@@ -103,7 +102,7 @@ void appendString(String* str, char c) {
         nullCheck(str->data);
     }
     str->data[str->length++] = c;
-    str->data[str->length] = '\0'; // Обновляем null-терминатор
+    str->data[str->length] = '\0';
 }
 
 // Добавление строки к динамическому массиву строк
@@ -159,31 +158,17 @@ String nextLex(FILE* inp) {
 }
 
 void procDelimeter(DynArrStr* arr, size_t item) {
-    if ((item == 0) || (item == arr->length-1)) {
+    if ((item == 0) || ((item == arr->length-1) && (arr->data[item].data[0] == ' '))) {
         removeFromArr(arr, item);
         return;
     }
-    String str = arr->data[item];
-    size_t len = str.length;
-    String temp;
-    initString(&temp);
-    appendString(&temp, str.data[0]);
-    // printf("-+%c+-\n", temp[0]);
-    for (size_t i = 1; i < len; i++) {
-        if ((str.data[i] == ' ') && ((str.data[i-1] == ' ') || (str.data[i-1] == '\n'))) {
-            continue;
-        } else if (i >= 2) {
-            if ((str.data[i] == '\n') && (str.data[i-1] == '\n') && (str.data[i-2] == '\n')) {
-                continue;
-            }
-        }
-        // printf("~%c~ == %lu == %lu\n", str.data[i], i, item);
-        appendString(&temp, str.data[i]);
+    char str = arr->data[item].data[0];
+    char p_str = arr->data[item-1].data[0];
+    if ((str == ' ') && ((p_str == '\n') || (p_str == ' '))) {
+        removeFromArr(arr, item);
+    } else if ((item > 1) && ((str = '\n') && (p_str == '\n') && (arr->data[item-2].data[0] == '\n'))) {
+        removeFromArr(arr, item);
     }
-    
-    removeFromArr(arr, item);
-    addToArr(arr, item, &temp);
-    // printf(">%s< ", arr->data[item].data);
 }
 
 void procString(DynArrStr* arr, size_t item) {
@@ -209,7 +194,6 @@ void procNumber(DynArrStr* arr, size_t item) {
     for (size_t s = item+1; s < arr->length; s++) {
         String* str = &(arr->data[s]);
         if ((isdigit(str->data[0])) && (i == 1)) {
-            // printf("~%lu \n", s);
             digit = s;
             break;
         } else if (((str->data[0] == '-') || (str->data[0] == '+') || (str->data[0] == '/') || (str->data[0] == '*')) && (i == 0)) {
@@ -222,14 +206,12 @@ void procNumber(DynArrStr* arr, size_t item) {
             return; // not an expression
             }
     }
-    // printf(">%lu %lu< \n", digit, sign);
 
     int answ = 0;
     int f = 0;
     String* str = &(arr->data[item]);
     int f_d = atoi(str->data);
     int s_d = atoi(arr->data[digit].data);
-    // printf(">%lu %lu %i %i %c< \n", digit, sign, f_d, s_d, arr->data[sign].data[0]);
     switch (arr->data[sign].data[0]) {
         case '-':
             answ = f_d - s_d;
@@ -318,27 +300,31 @@ void strProc(DynArrStr* arr) {
             procString(arr, i);
         } else if (isdigit(c)) {
             procNumber(arr, i);
-            // printDynArr(arr);
         } else if (c == '(') {
             procBkt(arr, i);
         }
     }
 }
 
-int main() {
+int main(int argc, char** argv) {
+    if (argc != 3) {
+        printf("Error in args");
+        exit(1);
+    }
+    FILE* inp_ptr = fopen(argv[1], "r");
+    FILE* out_ptr = fopen(argv[2], "w");
     String str;
     DynArrStr arr;
     initDynArrStr(&arr);
-    while ((str = nextLex(stdin)).length > 0) {
+    while ((str = nextLex(inp_ptr)).length > 0) {
         appendDynArrStr(&arr, &str);
     }
-    size_t init_len = arr.length;    
-    // printDynArr(&arr);
+    size_t init_len = arr.length;
     strProc(&arr);
     
     while (init_len != arr.length) {
         init_len = arr.length;
         strProc(&arr);
     }
-    printDynArr(&arr);
+    printDynArr(&arr, out_ptr);
 }
