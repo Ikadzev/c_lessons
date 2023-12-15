@@ -1,3 +1,6 @@
 [submodule "labs/first-lab"]
 	path = labs/first-lab
 	url = https://github.com/nsu-syspro/1-23126-ikadzev.git
+[submodule "labs/second-lab"]
+	path = labs/second-lab
+	url = https://github.com/nsu-syspro/2-23126-ikadzev.git
